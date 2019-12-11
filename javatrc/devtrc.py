@@ -40,12 +40,18 @@ class TOptions:
         if '-s' in xOptions:
             xInx = xOptions.index('-s')
             self.mSortDir = self.SORT_DIRECTION_UP
-            self.mInxSort = int(xOptions[xInx+1])
+            try:
+                self.mInxSort = int(xOptions[xInx+1])
+            except:
+                self.mInxSort = 0
 
         if '+s' in xOptions:
             xInx = xOptions.index('+s')
             self.mSortDir = self.SORT_DIRECTION_DOWN
-            self.mInxSort = int(xOptions[xInx+1])
+            try:
+                self.mInxSort = int(xOptions[xInx+1])
+            except:
+                self.mInxSort = 0
 
         if '-f' in xOptions:
             xInx = xOptions.index('-f')
@@ -202,7 +208,7 @@ class TDevAnalyser(cmd.Cmd):
         if xOptions.mSortDir == xOptions.SORT_DIRECTION_NONE:
             return table
         
-        table.sort(xOptions.mInxSort)
+        table.do_sort(xOptions.mInxSort)
         return table
       
     def get_filtered(self, args=None, table=None):
@@ -353,9 +359,9 @@ class TDevAnalyser(cmd.Cmd):
         xSectionTable = self.mTblRoot.get_selected()
         
         if xOptions.mStatistic == 'cpu':
-            return xSectionTable[-2][1]
+            return self.get_sorted( args=args, table=xSectionTable[-2][1] )
         elif xOptions.mStatistic == 'depth':
-            return xSectionTable[-1][1]
+            return self.get_sorted( args=args, table=xSectionTable[-1][1] )
         else:
             return None
                      
