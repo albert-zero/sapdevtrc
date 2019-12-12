@@ -285,8 +285,8 @@ class TDevAnalyser(cmd.Cmd):
         xTable = None
         try :
             xOptions  = TOptions(args)
-            xTable    = self.get_threads()
-            xTable   = xTable.get_selected()
+            xTable    = self.get_threads(args)            
+            xTable    = xTable.get_selected()
         except AttributeError:
             return None
         
