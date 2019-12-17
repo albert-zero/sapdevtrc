@@ -17,15 +17,16 @@ from javatrc.eezzy_table import TTable
 
 class TOptions:
     def __init__(self, aArgs):
-        self.SORT_DIRECTION_UP   = 2
-        self.SORT_DIRECTION_DOWN = 1
-        self.SORT_DIRECTION_NONE = 0
+        self.SORT_DIRECTION_UP   =  1
+        self.SORT_DIRECTION_DOWN = -1
+        self.SORT_DIRECTION_NONE =  0
                 
         self.mInxSec    = [0,0,0,0]
         self.mInxSort   = -1
         self.mSortDir   = self.SORT_DIRECTION_NONE
         self.mStatistic = None
-        
+        self.mFilter    = None
+         
         if aArgs == None:
             return
         
@@ -55,7 +56,7 @@ class TOptions:
 
         if '-f' in xOptions:
             xInx = xOptions.index('-f')
-            self.mFilter  = int(xOptions[xInx+1])
+            self.mFilter  = xOptions[xInx+1]
 
         if '--cpu' in xOptions:
             self.mStatistic = 'cpu'
@@ -207,8 +208,9 @@ class TDevAnalyser(cmd.Cmd):
         xOptions     = TOptions(args)
         if xOptions.mSortDir == xOptions.SORT_DIRECTION_NONE:
             return table
-        
-        table.do_sort(xOptions.mInxSort)
+        xAscending   = xOptions.mSortDir == xOptions.SORT_DIRECTION_UP
+
+        table.do_sort(xOptions.mInxSort, asc = xAscending)
         return table
       
     def get_filtered(self, args=None, table=None):
@@ -216,27 +218,30 @@ class TDevAnalyser(cmd.Cmd):
             return None
         
         xOptions     = TOptions(args)
-        aTblFiltered = TTable(table.get_column())
-        aParser      = list()
+        aTblFiltered = TTable(aColNames=table.get_columns_names(), aHeaderStr='Filtered:' + xOptions.mFilter)
         
-        for xFilter in xOptions.mFilter:
-            if xFilter != None:
-                aParser.append(re.compile(xFilter))
-            else:
-                aParser.append(None)
+        if not xOptions.mFilter:
+            return table
+        
+        aFilter      = xOptions.mFilter.split('=')
+        if len(aFilter) < 2:
+            return table
+            
+        xColInx      = [i for i, j in enumerate( table.get_columns()[0] ) if j == aFilter[0] ]
+        if not xColInx:
+            return table
+        
+        xColInx      = xColInx[0]        
+        xParser      = re.compile(aFilter[1])
+
                        
         for xRow in table:
-            for xParser, xElem in zip(aParser, xRow):
-                if xParser == None:
-                    continue
-                xRes = xParser.search(xElem)
-                if xRes == None:
-                    break
-                
+            xRes = xParser.search(str(xRow[xColInx]))
             if xRes != None:
-                aTblFiltered.append(xRow)
-                
-        return self.get_sorted(self, args, aTblFiltered)
+                aTblFiltered.append(xRow[1:])
+        
+        # return aTblFiltered
+        return self.get_sorted(args=args, table=aTblFiltered)
 
     
     # Return the list of sections
@@ -271,13 +276,14 @@ class TDevAnalyser(cmd.Cmd):
         xTable = None
         try :
             xOptions = TOptions(args)
-            xTable   = self.get_dumps(args)
+            xTable   = self.get_dumps(args)            
             xTable   = xTable.get_selected()
             xTable.do_select(xOptions.mInxSec[2])
         except AttributeError:
             return None
         
-        self.mTblCurrent  = xTable 
+        xTable            = self.get_filtered( args=args, table = xTable )
+        self.mTblCurrent  = xTable
         return xTable
             
     # Return the list of methods for a thread    
@@ -425,7 +431,10 @@ class TDevAnalyser(cmd.Cmd):
         Options:
         -s <inx column> : sort down
         +s <inx column> : sort up
-        -f filter as a regular expression for each row
+        -f <column-name>=<regex>: searches the regex each row on a given column
+        
+        Example: List threads having "App" in the name for section 0 and dump 0
+        show threads -i 0:0 -f Thread=App -s 4
         """
         xOptions = TOptions(aArgs)
 

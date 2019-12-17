@@ -90,6 +90,9 @@ class TTable(collections.UserList):
     def get_columns(self):
         return [self.mColsName]
 
+    def get_columns_names(self):
+        return self.mColsName[1:]
+    
     # ---------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------
     def get_columns_type(self):
@@ -136,7 +139,7 @@ class TTable(collections.UserList):
     # ---------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------
     def setHeader(self, aHeaderDict):
-        self.mHeaderDict.update(aHeaderDict)
+        self.mHeaderDic.update(aHeaderDict)
     
     # ---------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------
@@ -150,10 +153,13 @@ class TTable(collections.UserList):
         
     # ---------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------
-    def do_sort(self, index='0'):
+    def do_sort(self, index='0', asc = None):        
         aInx    = min(max(0, int(index)), len(self.mColsName)-1)
         aResult = list()
-        self.mSortReverse =  not self.mSortReverse
+        if asc == None:
+            self.mSortReverse = not self.mSortReverse
+        else:
+            self.mSortReverse = not asc
         
         if self.mColsType[aInx] == int:
             aResult = sorted(self, key=lambda xRow: int(xRow[aInx]),   reverse=self.mSortReverse)
